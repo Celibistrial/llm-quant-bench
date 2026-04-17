@@ -1458,6 +1458,7 @@ tqdm==4.67.3 \
     # via
     #   datasets
     #   huggingface-hub
+    #   llm-quant-bench
     #   transformers
 transformers==5.5.4 \
     --hash=sha256:0bd6281b82966fe5a7a16f553ea517a9db1dee6284d7cb224dfd88fc0dd1c167 \
