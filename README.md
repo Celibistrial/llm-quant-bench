@@ -1,41 +1,38 @@
-# LLM Quantization Benchmark
+# LLM Quantization Benchmark (OPT-125M)
 
-This project benchmarks the `facebook/opt-125m` model at different precision levels (FP32, FP16, INT8, INT4) to evaluate performance trade-offs in inference latency, memory footprint, and perplexity.
+An advanced benchmarking suite for evaluating Large Language Model (LLM) quantization strategies. This project moves beyond simple latency checks to analyze the impact of precision reduction on model weights, language modeling perplexity, and prediction accuracy.
 
-## Features
-- **Precision Levels:** FP32, FP16, INT8, and INT4 (INT8/INT4 require CUDA).
-- **Hardware Support:** 
-  - **CUDA:** Full support for all precisions via `bitsandbytes`.
-  - **MPS (Apple Silicon):** Optimized support for FP32 and FP16.
-- **Metrics:** Inference latency (ms/token), Peak Memory (MB), and Perplexity (WikiText-2).
-- **Environment:** Managed with `uv` for fast, reproducible setups.
+## Technical Analysis Features
+- **Rigorous Accuracy Metrics**: Evaluates **Top-1** and **Top-5 Accuracy** on a validation slice of the WikiText-2 dataset.
+- **Probabilistic Scoring**: Measures **Perplexity (PPL)** to quantify information loss across precisions.
+- **Weight Distribution Analysis**: Utilizes **Kernel Density Estimation (KDE)** to visualize the structural impact of quantization on global model tensors.
+- **Performance Profiling**: High-precision latency measurement (ms/token) and peak VRAM allocation tracking.
+- **Multi-Hardware Optimization**:
+  - **CUDA**: Support for 4-bit and 8-bit quantization via `bitsandbytes`.
+  - **MPS (Apple Silicon)**: Optimized FP16/FP32 paths using Apple's Metal Performance Shaders.
+
+## Methodology
+The benchmark performs a clean load of the `facebook/opt-125m` model for each precision state to ensure no cross-contamination of memory stats. Latency is measured over multiple iterations to ensure statistical significance, focusing on token-per-second throughput rather than raw generation time.
 
 ## Requirements
-
 - Python 3.10+
-- `uv` (recommended) or `pip`
-- A CUDA-compatible GPU (for INT8/INT4) or Apple Silicon (for MPS acceleration).
+- `uv` (recommended)
+- Hardware: CUDA GPU (for INT8/INT4) or Apple Silicon (for MPS).
 
-## Getting Started
-
-### Using uv (Recommended)
-
+## Execution
 ```bash
-# Install dependencies and run the benchmark
 uv run python benchmark.py
 ```
 
-### Using pip
+## Comparative Analysis
+The generated plots provide a multi-dimensional view of the quantization trade-offs:
 
-```bash
-pip install -r requirements.txt
-python benchmark.py
-```
+![Benchmark Analysis](benchmark_results.png)
 
-## Results
+*Key Insights:*
+- **Efficiency Frontier**: Visualizes the Pareto frontier between inference speed and Top-1 accuracy.
+- **Memory Compression**: Quantifies the VRAM savings provided by 8-bit and 4-bit loading.
+- **Weight Drift**: The KDE plot reveals how quantization shifts the numerical distribution of the model's intelligence.
 
-The benchmark generates a summary plot `benchmark_results.png` comparing the metrics across precisions.
-
-![Benchmark Results](benchmark_results.png)
-
-*Note: Results depend on your hardware. On Apple Silicon, FP16 typically offers the best balance of speed and memory usage.*
+---
+*Created as part of a deep-dive into LLM optimization and deployment efficiency.*
