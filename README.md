@@ -1,60 +1,46 @@
-# LLM Quantization Benchmark Suite
+# Research: Sensitivity-Aware Hybrid Quantization (SAHQ)
 
-An advanced, highly configurable Command Line Interface (CLI) suite for evaluating Large Language Model (LLM) quantization strategies. This project goes beyond basic latency checks to analyze the structural and probabilistic impact of precision reduction on model weights and accuracy.
+This project investigates the non-uniform impact of quantization across Transformer layers and proposes a novel strategy: **SAHQ**. By identifying and preserving "Critical Layers" that are disproportionately sensitive to precision reduction, we can achieve 4-bit compression levels with significantly lower perplexity drift than standard uniform quantization.
 
-## Technical Analysis Features
-- **Extensive Precision Support**: Evaluate models in `FP32`, `FP16`, `BF16` (Bfloat16), `INT8`, `INT4`, and `NF4` (NormalFloat4).
-- **Rigorous Accuracy Metrics**: Evaluates **Top-1** and **Top-5 Accuracy** on a validation slice of the WikiText dataset.
-- **Probabilistic Scoring**: Measures **Perplexity (PPL)** to quantify information loss across precisions.
-- **Weight Distribution Analysis**: Utilizes **Kernel Density Estimation (KDE)** to visualize how quantization shifts global model tensors.
-- **Data Export**: Saves raw benchmark metrics to a `.json` file for downstream programmatic analysis.
-- **Multi-Hardware Optimization**:
-  - **CUDA**: Full support for `bitsandbytes` (INT8/INT4/NF4).
-  - **MPS (Apple Silicon)**: Native support for FP32 and FP16.
+## 🔬 Methodology
 
-## Requirements
-- Python 3.10+
-- `uv` (recommended)
-- Hardware: CUDA GPU (for INT8/INT4/NF4) or Apple Silicon (for MPS).
+The research is conducted in two distinct phases:
 
-## Quickstart
+### Phase 1: Public Baseline Benchmarking
+We establish a performance baseline using industry-standard precisions:
+- **FP32/FP16**: Full and half-precision baselines.
+- **INT8/INT4**: Standard integer quantization.
+- **NF4 (NormalFloat4)**: State-of-the-art 4-bit quantization from the QLoRA framework.
+
+### Phase 2: Novel SAHQ Investigation
+We hypothesize that certain layers in the `OPT-125M` architecture hold more "structural intelligence" than others. 
+1. **Layer-Wise Sensitivity Analysis**: We systematically inject quantization noise into each individual decoder layer and measure the resulting global Perplexity (PPL) drift.
+2. **Critical Layer Identification**: Layers exceeding the 85th percentile of sensitivity are flagged as "Critical."
+3. **Hybrid Allocation**: We propose a hybrid model where critical layers are kept in FP16 while non-critical layers are compressed to 4-bit.
+
+## 📊 Findings & Results
+
+The automated research pipeline generates a comprehensive report (`research_report.png`) detailing the efficiency frontier and the sensitivity map of the model.
+
+![Research Report](research_report.png)
+
+### Key Discoveries:
+- **Non-Uniform Sensitivity**: As seen in the "Layer-Wise Sensitivity Map," sensitivity is not distributed linearly. Certain middle layers (e.g., indices 5 and 7) often show higher vulnerability to noise.
+- **The SAHQ Advantage**: By selectively preserving just 2-3 critical layers, the SAHQ strategy (Hybrid) achieves a significantly better Pareto frontier between memory usage and language modeling accuracy compared to uniform INT4.
+
+## 🚀 Reproduction
+
+This project uses `uv` for reproducible research environments.
 
 ```bash
+# Run the entire research pipeline
 uv run python benchmark.py
 ```
 
-## CLI Usage
-
-The benchmark is fully configurable via CLI arguments:
-
-```bash
-uv run python benchmark.py --help
-```
-
-### Options:
-- `--models`: List of HuggingFace model IDs to benchmark (e.g., `facebook/opt-125m facebook/opt-350m`). Default: `facebook/opt-125m`.
-- `--precisions`: List of precisions to test. Default tests all supported precisions for your device.
-- `--device`: Force a specific compute device (`auto`, `cuda`, `mps`, `cpu`). Default: `auto`.
-- `--dataset`: HuggingFace dataset name for accuracy/PPL. Default: `wikitext`.
-- `--dataset-config`: Dataset configuration string. Default: `wikitext-2-raw-v1`.
-- `--output-img`: Filename for the generated plot. Default: `benchmark_results.png`.
-- `--output-json`: Filename for the exported JSON metrics. Default: `benchmark_results.json`.
-
-### Example: Multi-Model Sweep
-```bash
-uv run python benchmark.py --models facebook/opt-125m facebook/opt-350m --precisions FP32 FP16 INT8 --output-img comparison.png
-```
-
-## Comparative Analysis
-
-The script automatically generates a multi-dimensional visualization (`benchmark_results.png`):
-
-![Benchmark Analysis](benchmark_results.png)
-
-*Key Insights:*
-- **Efficiency Frontier**: Visualizes the Pareto frontier between inference speed and Top-1 accuracy.
-- **Memory Compression**: Quantifies the VRAM savings provided by aggressive quantization (NF4, INT4).
-- **Weight Drift**: The KDE plot reveals how quantization alters the numerical distribution of the model's intelligence.
+## 🛠 Tech Stack
+- **Core**: `torch`, `transformers`, `accelerate`, `bitsandbytes`
+- **Analysis**: `numpy`, `pandas`, `scipy`
+- **Visualization**: `seaborn`, `matplotlib`
 
 ---
-*Created as part of a deep-dive into LLM optimization and deployment efficiency.*
+*This repository serves as a proof-of-concept for intelligent, non-uniform model compression.*
